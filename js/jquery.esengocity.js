@@ -19,6 +19,9 @@ var o = {
     cache:      true
 };
 
+// true if we have internet connectivity
+var connected = true;
+
 // main api entry
 $['eSengoCity'] = {
 
@@ -26,6 +29,11 @@ $['eSengoCity'] = {
     setOptions: function(options) {
         var opt = $.extend({}, o, options);
         o = opt;
+    },
+    
+    // set internet connectivity
+    setConnectivity: function(haveInternet) {
+        connected = (haveInternet == true);
     },
     
     // list spaces
@@ -76,6 +84,7 @@ function DataStore(command, options) {
         cacheTimeout:     20,
         useOldOnError:    true,
         fullFetch:        false,
+        prefetch:         true,
         orderBy:          null,
         requireNode:      false,
         requirePortal:    false,
@@ -106,9 +115,14 @@ function DataStore(command, options) {
     // set options
     this.setOptions = function(options) {
         var opt = $.extend({}, o, options);
+        // fix invalid values
+        if (o.pageSize < 1) o.pageSize = 1;
         // detect things that require a reset of local data
         var reset = false;
-        if (opt.pageSize != o.pageSize) reset = true;
+        if (opt.pageSize != o.pageSize) {
+            pageCount = Math.ceil(itemCount / opt.pageSize);
+            reset = true;
+        }
         if (opt.entryPoint != o.entryPoint) reset = true;
         if (opt.portal != o.portal) reset = true;
         if (opt.space != o.space) reset = true;
@@ -153,12 +167,12 @@ function DataStore(command, options) {
     };
     
     // get number of items
-    this.getItems = function() {
+    this.getItemsCount = function() {
         return itemCount;
     };
     
     // get number of pages
-    this.getPages = function() {
+    this.getPagesCount = function() {
         return pageCount;
     };
     
@@ -173,12 +187,12 @@ function DataStore(command, options) {
     };
     
     // get number of loaded items (it may also include expired items)
-    this.getLoadedItems = function() {
+    this.getLoadedItemsCount = function() {
         return (pages.length > 0) ? (pages.length - 1) * o.pageSize + pages[pages.length - 1].items.length : 0;
     };
     
     // get number of loaded pages
-    this.getLoadedPages = function() {
+    this.getLoadedPagesCount = function() {
         return pages.length;
     };
     
@@ -233,6 +247,9 @@ function DataStore(command, options) {
         maxPages = (maxPages === undefined || maxPages === null) ? null : +maxPages;
         var fullFetch = o.fullFetch;
         var pageSize = o.pageSize;
+        // don't even try to fetch
+        if (!connected) {
+        }
         // build url
         var url = o.entryPoint + encodeURIComponent(command);
         var d = '?';
@@ -252,15 +269,35 @@ function DataStore(command, options) {
             url += d + 'space=' + encodeURIComponent(o.space);
             d = '&';
         }
+        // start and max pages arguments
         if (!fullFetch) {
-            if (firstFetch) {
+            var realStartPage = startPage;
+            var realMaxPages = maxPages;
+            if ((realStartPage !== null) && (realMaxPages !== null)) {
+                // special case for the first fetch
+                if (firstFetch) {
+                    if ((realStartPage + realMaxPages) <= o.fetchPages) {
+                        realStartPage = 0;
+                        realMaxPages = o.fetchPages;
+                    }
+                }
+                // prefetch
+                if (o.prefetch) {
+                    // fetch one page before
+                    if ((realStartPage > 0) && !this.isPageLoaded(realStartPage - 1)) {
+                        realStartPage--;
+                        realMaxPages++;
+                    }
+                    // fetch one extra page after
+                    if (((realStartPage + realMaxPages) < pageCount) && !this.isPageLoaded(realStartPage + realMaxPages)) realMaxPages++;
+                }
             }
-            if (startPage !== null) {
-                url += d + 'start=' + startPage * pageSize;
+            if (realStartPage !== null) {
+                url += d + 'start=' + realStartPage * pageSize;
                 d = '&';
             }
-            if (maxPages !== null) {
-                url += d + 'max=' + maxPages * pageSize;
+            if (realMaxPages !== null) {
+                url += d + 'max=' + realMaxPages * pageSize;
                 d = '&';
             }
         }
@@ -287,7 +324,7 @@ function DataStore(command, options) {
             // we expected this data
             if (expected === id) {
                 expected = null;
-                if (fullFetch) {
+                if (fullFetch && total == items.length) {
                     pageFirst = 0;
                     pages = [{
                         items: items,
@@ -305,13 +342,17 @@ function DataStore(command, options) {
                     });
                 }
                 else {
-                    // changed size?
+                    // reset local data if remote size has changed
                     if (total != itemCount) {
                         itemCount = total;
                         pageCount = Math.ceil(total / pageSize);
                         pageFirst = 0;
                         pages = [];
                     }
+                    firstFetch = false;
+                    itemCount = total;
+                    pageCount = Math.ceil(itemCount / o.pageSize);
+                    var fetchedPages = Math.ceil(items.length / o.pageSize);
                 }
             }
             // see if we can add it to the cache

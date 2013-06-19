@@ -41,10 +41,10 @@ $(function(){
     spaces.getPage()
     .done(function(result){
         $('#debug_spaces ul').append('<li>getPageSize() = '+spaces.getPageSize()+' (number of items in one page)</li>');
-        $('#debug_spaces ul').append('<li>getItems() = '+spaces.getItems()+' (number of items in remote store)</li>');
-        $('#debug_spaces ul').append('<li>getPages() = '+spaces.getPages()+' (number of pages in remote store)</li>');
-        $('#debug_spaces ul').append('<li>getLoadedItems() = '+spaces.getLoadedItems()+' (number of items available locally)</li>');
-        $('#debug_spaces ul').append('<li>getLoadedPages() = '+spaces.getLoadedPages()+' (number of pages available locally)</li>');
+        $('#debug_spaces ul').append('<li>getItemsCount() = '+spaces.getItemsCount()+' (number of items in remote store)</li>');
+        $('#debug_spaces ul').append('<li>getPagesCount() = '+spaces.getPagesCount()+' (number of pages in remote store)</li>');
+        $('#debug_spaces ul').append('<li>getLoadedItemsCount() = '+spaces.getLoadedItemsCount()+' (number of items available locally)</li>');
+        $('#debug_spaces ul').append('<li>getLoadedPagesCount() = '+spaces.getLoadedPagesCount()+' (number of pages available locally)</li>');
         $('#debug_spaces p').append('<pre>'+JSON.stringify(result,null,'  ')+'</pre>');
     })
     .fail(function(reason, description){
@@ -58,10 +58,10 @@ $(function(){
     categories.getPage()
     .done(function(result){
         $('#debug_categories ul').append('<li>getPageSize() = '+spaces.getPageSize()+' (number of items in one page)</li>');
-        $('#debug_categories ul').append('<li>getItems() = '+spaces.getItems()+' (number of items in remote store)</li>');
-        $('#debug_categories ul').append('<li>getPages() = '+spaces.getPages()+' (number of pages in remote store)</li>');
-        $('#debug_categories ul').append('<li>getLoadedItems() = '+spaces.getLoadedItems()+' (number of items available locally)</li>');
-        $('#debug_categories ul').append('<li>getLoadedPages() = '+spaces.getLoadedPages()+' (number of pages available locally)</li>');
+        $('#debug_categories ul').append('<li>getItemsCount() = '+spaces.getItemsCount()+' (number of items in remote store)</li>');
+        $('#debug_categories ul').append('<li>getPagesCount() = '+spaces.getPagesCount()+' (number of pages in remote store)</li>');
+        $('#debug_categories ul').append('<li>getLoadedItemsCount() = '+spaces.getLoadedItemsCount()+' (number of items available locally)</li>');
+        $('#debug_categories ul').append('<li>getLoadedPagesCount() = '+spaces.getLoadedPagesCount()+' (number of pages available locally)</li>');
         $('#debug_categories p').append('<pre>'+JSON.stringify(result,null,'  ')+'</pre>');
     })
     .fail(function(reason, description){
