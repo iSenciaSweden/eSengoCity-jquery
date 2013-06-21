@@ -27,17 +27,39 @@
 <script type="text/javascript">
 <!--/*--><![CDATA[/*><!--*/
 
+// shared configuration
+$.eSengoCity.setOptions({
+    entryPoint: 'http://val.isencia.com/apropat/bridge/services/',
+    node:       'ESENGO_ISENCIA',
+    language:   'en'
+});
+
+// create a spaces store
+var spaces = $.eSengoCity.listSpaces();
+
+// create a categories store
+var categories = $.eSengoCity.listCategories({
+    space: 53
+});
+
+function listCategories2() {
+    //categories.setPageSize(4);
+    categories.getPage(4)
+    .done(function(result){
+        $('#debug_categories ul').append('<li>getPageSize() = '+categories.getPageSize()+' (number of items in one page)</li>');
+        $('#debug_categories ul').append('<li>getItemsCount() = '+categories.getItemsCount()+' (number of items in remote store)</li>');
+        $('#debug_categories ul').append('<li>getPagesCount() = '+categories.getPagesCount()+' (number of pages in remote store)</li>');
+        $('#debug_categories ul').append('<li>getLoadedItemsCount() = '+categories.getLoadedItemsCount()+' (number of items available locally)</li>');
+        $('#debug_categories ul').append('<li>getLoadedPagesCount() = '+categories.getLoadedPagesCount()+' (number of pages available locally)</li>');
+        $('#debug_categories p').append('<pre>'+JSON.stringify(result,null,'  ')+'</pre>');
+    })
+    .fail(function(reason, description){
+        $('#debug_categories p').append('<h4>'+reason+'</h4><p>'+description+'</p>');
+    });
+}
+
 $(function(){
 
-    // shared configuration
-    $.eSengoCity.setOptions({
-        entryPoint: 'http://val.isencia.com/apropat/bridge/services/',
-        node:       'ESENGO_ISENCIA',
-        language:   'en'
-    });
-
-    // create a spaces store
-    var spaces = $.eSengoCity.listSpaces();
     spaces.getPage()
     .done(function(result){
         $('#debug_spaces ul').append('<li>getPageSize() = '+spaces.getPageSize()+' (number of items in one page)</li>');
@@ -51,18 +73,15 @@ $(function(){
         $('#debug_spaces p').append('<h4>'+reason+'</h4><p>'+description+'</p>');
     });
 
-    // create a categories store
-    var categories = $.eSengoCity.listCategories({
-        space: 53
-    });
     categories.getPage()
     .done(function(result){
-        $('#debug_categories ul').append('<li>getPageSize() = '+spaces.getPageSize()+' (number of items in one page)</li>');
-        $('#debug_categories ul').append('<li>getItemsCount() = '+spaces.getItemsCount()+' (number of items in remote store)</li>');
-        $('#debug_categories ul').append('<li>getPagesCount() = '+spaces.getPagesCount()+' (number of pages in remote store)</li>');
-        $('#debug_categories ul').append('<li>getLoadedItemsCount() = '+spaces.getLoadedItemsCount()+' (number of items available locally)</li>');
-        $('#debug_categories ul').append('<li>getLoadedPagesCount() = '+spaces.getLoadedPagesCount()+' (number of pages available locally)</li>');
+        $('#debug_categories ul').append('<li>getPageSize() = '+categories.getPageSize()+' (number of items in one page)</li>');
+        $('#debug_categories ul').append('<li>getItemsCount() = '+categories.getItemsCount()+' (number of items in remote store)</li>');
+        $('#debug_categories ul').append('<li>getPagesCount() = '+categories.getPagesCount()+' (number of pages in remote store)</li>');
+        $('#debug_categories ul').append('<li>getLoadedItemsCount() = '+categories.getLoadedItemsCount()+' (number of items available locally)</li>');
+        $('#debug_categories ul').append('<li>getLoadedPagesCount() = '+categories.getLoadedPagesCount()+' (number of pages available locally)</li>');
         $('#debug_categories p').append('<pre>'+JSON.stringify(result,null,'  ')+'</pre>');
+        listCategories2();
     })
     .fail(function(reason, description){
         $('#debug_categories p').append('<h4>'+reason+'</h4><p>'+description+'</p>');
