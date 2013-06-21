@@ -151,14 +151,7 @@ function DataStore(command, options) {
         maxPages = (maxPages === undefined) ? 1 : +maxPages;
         // check if we have the pages in cache
         if (this.isPageLoaded(pageId, maxPages)) {
-            var ret = {
-                firstPage: pageId,
-                pageCount: maxPages,
-                pageSize: o.pageSize,
-                itemCount: itemCount,
-                items: pages[pageId - pageFirst].items
-            };
-            dfd.resolve(ret);
+            resolveRequest(dfd, pageId, maxPages);
             // prefetch
             if (o.prefetch && expected === null) {
                 if (((pageId + maxPages) < pageCount) && !_this.isPageLoaded(pageId + maxPages) && (pageId + maxPages) < pageCount) {
@@ -291,8 +284,8 @@ function DataStore(command, options) {
         if (pages.length) {
             startPage -= pageFirst;
             for (var i = 0; i < maxPages; i++) {
-                if ((fallback && o.useOldOnError && !_this.isPageLoaded(i + pageFirst, 1, true)) || ((!fallback || !o.useOldOnError) && !_this.isPageLoaded(i + pageFirst))) break;
-                ret.pages.push(pages[i]);
+                if ((fallback && o.useOldOnError && !_this.isPageLoaded(i + startPage + pageFirst, 1, true)) || ((!fallback || !o.useOldOnError) && !_this.isPageLoaded(i + startPage + pageFirst))) break;
+                ret.pages.push(pages[startPage + i]);
             }
         }
         dfd.resolve(ret);
@@ -342,7 +335,7 @@ function DataStore(command, options) {
             var realStartPage = startPage;
             var realMaxPages = maxPages;
             // special case for the first fetch
-            if (firstFetch) {
+            if (firstFetch || (pages.length == 0 && pageCount > 0)) {
                 if ((realStartPage + realMaxPages) <= o.fetchPages) {
                     realStartPage = 0;
                     realMaxPages = o.fetchPages;
@@ -421,9 +414,7 @@ function DataStore(command, options) {
                 addDataToCache(realStartPage, items);
             }
         }).fail(function(jqXHR, textStatus, errorThrown){
-            if (expected === id) {
-                resolveRequest(dfd, startPage, maxPages, true);
-            }
+            if (expected === id) resolveRequest(dfd, startPage, maxPages, true);
         });
     }
 }

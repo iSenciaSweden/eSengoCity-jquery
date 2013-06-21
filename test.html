@@ -6,6 +6,8 @@
 </head>
 <body>
 
+<div id="debug_url"></div>
+
 <div id="debug_categories">
 <h1>listCategories</h1>
 <ul>
@@ -44,7 +46,7 @@ var categories = $.eSengoCity.listCategories({
 
 function listCategories2() {
     //categories.setPageSize(4);
-    categories.getPage(4)
+    categories.getPage(1, 2)
     .done(function(result){
         $('#debug_categories ul').append('<li>getPageSize() = '+categories.getPageSize()+' (number of items in one page)</li>');
         $('#debug_categories ul').append('<li>getItemsCount() = '+categories.getItemsCount()+' (number of items in remote store)</li>');
@@ -73,7 +75,7 @@ $(function(){
         $('#debug_spaces p').append('<h4>'+reason+'</h4><p>'+description+'</p>');
     });
 
-    categories.getPage()
+    categories.getPage(20)
     .done(function(result){
         $('#debug_categories ul').append('<li>getPageSize() = '+categories.getPageSize()+' (number of items in one page)</li>');
         $('#debug_categories ul').append('<li>getItemsCount() = '+categories.getItemsCount()+' (number of items in remote store)</li>');
