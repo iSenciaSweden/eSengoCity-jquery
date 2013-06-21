@@ -151,18 +151,17 @@ function DataStore(command, options) {
         maxPages = (maxPages === undefined) ? 1 : +maxPages;
         // check if we have the pages in cache
         if (this.isPageLoaded(pageId, maxPages)) {
-            var id = pageId - pageFirst;
             var ret = {
                 firstPage: pageId,
                 pageCount: maxPages,
                 pageSize: o.pageSize,
                 itemCount: itemCount,
-                items: pages[id].items
+                items: pages[pageId - pageFirst].items
             };
             dfd.resolve(ret);
             // prefetch
             if (o.prefetch && expected === null) {
-                if (((pageId + maxPages) < pageCount) && !_this.isPageLoaded(pageId + maxPages)) {
+                if (((pageId + maxPages) < pageCount) && !_this.isPageLoaded(pageId + maxPages) && (pageId + maxPages) < pageCount) {
                     var dummy = $.Deferred();
                     fetchData(dummy, pageId + maxPages, 1);
                 }
@@ -172,10 +171,8 @@ function DataStore(command, options) {
                 }
             }
         }
-        // fetch
-        else {
-            fetchData(dfd, pageId, maxPages);
-        }
+        // fetch new data
+        else fetchData(dfd, pageId, maxPages);
         return dfd;
     };
     
@@ -247,6 +244,7 @@ function DataStore(command, options) {
 
     // add pages to cache
     function addDataToCache(start, items) {
+        if (items.length == 0) return;
         var fetchedPages = Math.ceil(items.length / o.pageSize);
         var newPages = [];
         var oldPageFirst = pageFirst;
@@ -278,15 +276,26 @@ function DataStore(command, options) {
 
     // resolve the fetch request
     function resolveRequest(dfd, startPage, maxPages, fallback) {
-        fallback = (fallback === undefined) ? false : fallback;
-        if (fallback) {
-            if (!o.useOldOnError) {
-                dfd_expected.reject('cancel', 'The request was canceled by a newer request.');
-                return;
+        fallback = (fallback === undefined) ? false : fallback;        
+        if ((firstFetch || startPage < pageCount) && (((!fallback || !o.useOldOnError) && !_this.isPageLoaded(startPage)) || (fallback && o.useOldOnError && !_this.isPageLoaded(startPage, 1, true)))) {
+            dfd.reject('error', 'Could not fetch the wanted data.');
+            return;
+        }
+        var ret = {
+            firstPage: startPage,
+            pageCount: pageCount,
+            pageSize: o.pageSize,
+            itemCount: itemCount,
+            pages: []
+        };
+        if (pages.length) {
+            startPage -= pageFirst;
+            for (var i = 0; i < maxPages; i++) {
+                if ((fallback && o.useOldOnError && !_this.isPageLoaded(i + pageFirst, 1, true)) || ((!fallback || !o.useOldOnError) && !_this.isPageLoaded(i + pageFirst))) break;
+                ret.pages.push(pages[i]);
             }
         }
-        else {
-        }
+        dfd.resolve(ret);
     }
 
     // do a fetch
@@ -304,8 +313,10 @@ function DataStore(command, options) {
         maxPages = (maxPages === undefined || maxPages === null) ? 1 : +maxPages;
         var fullFetch = o.fullFetch;
         var pageSize = o.pageSize;
-        // don't even try to fetch
+        // don't even try to fetch, try and handle it as best as we can
         if (!connected) {
+            resolveRequest(dfd, startPage, maxPages, true);
+            return;
         }
         // build url
         var url = o.entryPoint + encodeURIComponent(command);
@@ -374,22 +385,24 @@ function DataStore(command, options) {
             // we expected this data
             if (expected === id) {
                 expected = null;
+                firstFetch = false;
                 if (fullFetch && total == items.length) {
                     pageFirst = 0;
-                    pages = [{
-                        items: items,
-                        created: +new Date
-                    }];
-                    itemCount = items.length;
-                    pageCount = 1;
-                    o.pageSize = itemCount;
-                    dfd.resolve({
-                        firstPage: 0,
-                        pageCount: pageCount,
-                        pageSize: o.pageSize,
-                        itemCount: itemCount,
-                        items: pages[0].items
-                    });
+                    if (total > 0) {
+                        pages = [{
+                            items: items,
+                            created: +new Date
+                        }];
+                        pageCount = 1;
+                        itemCount = items.length;
+                        o.pageSize = itemCount;
+                    }
+                    else {
+                        pages = [];
+                        pageCount = 0;
+                        itemCount = 0;
+                    }
+                    resolveRequest(dfd, 0, 1);
                 }
                 else {
                     // reset local data if remote size has changed
@@ -397,32 +410,10 @@ function DataStore(command, options) {
                         pageFirst = 0;
                         pages = [];
                     }
-                    firstFetch = false;
                     itemCount = total;
                     pageCount = Math.ceil(itemCount / o.pageSize);
                     addDataToCache(realStartPage, items);
-                    // return the data
-                    if (_this.isPageLoaded(startPage, 1)) {
-                        var ret = {
-                            firstPage: startPage,
-                            pageCount: pageCount,
-                            pageSize: pageSize,
-                            itemCount: itemCount,
-                            items: []
-                        };
-                        startPage -= pageFirst;
-                        for (var i = 0; i < maxPages; i++) {
-                            if (i >= pages.length) break;
-                            if (!_this.isPageLoaded(pageFirst + i, 1)) break;
-                            for (var j = 0; j < pages[i].items.length; j++) {
-                                ret.items.push(pages[i].items[j]);
-                            }
-                        }
-                        dfd.resolve(ret);
-                    }
-                    // fallback
-                    else {
-                    }
+                    resolveRequest(dfd, startPage, maxPages);
                 }
             }
             // see if we can add it to the cache
@@ -431,28 +422,7 @@ function DataStore(command, options) {
             }
         }).fail(function(jqXHR, textStatus, errorThrown){
             if (expected === id) {
-                expected = null;
-                // as a fallback, try to use cache to fetch some results
-                if (o.useOldOnError && _this.isPageLoaded(startPage, 1, true)) {
-                    if (startPage === null) startPage = 0;
-                    if (maxPages === null) maxPages = 1;
-                    var ret = {
-                        firstPage: startPage,
-                        pageCount: pageCount,
-                        pageSize: pageSize,
-                        itemCount: itemCount,
-                        items: []
-                    };
-                    startPage -= pageFirst;
-                    for (var i = 0; i < maxPages; i++) {
-                        if (i >= pages.length) break;
-                        for (var j = 0; j < pages[i].items.length; j++) {
-                            ret.items.push(pages[i].items[j]);
-                        }
-                    }
-                    dfd.resolve(ret);
-                }
-                else dfd.reject('request_failed', 'AJAX request failed.');
+                resolveRequest(dfd, startPage, maxPages, true);
             }
         });
     }
