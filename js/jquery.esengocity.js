@@ -27,8 +27,7 @@ $['eSengoCity'] = {
 
     // set options
     setOptions: function(options) {
-        var opt = $.extend({}, o, options);
-        o = opt;
+        o = $.extend({}, o, options);
     },
     
     // set internet connectivity
@@ -268,10 +267,10 @@ function DataStore(command, options) {
     }
 
     // resolve the fetch request
-    function resolveRequest(dfd, startPage, maxPages, fallback) {
+    function resolveRequest(dfd, startPage, maxPages, fallback, message) {
         fallback = (fallback === undefined) ? false : fallback;        
         if ((firstFetch || startPage < pageCount) && (((!fallback || !o.useOldOnError) && !_this.isPageLoaded(startPage)) || (fallback && o.useOldOnError && !_this.isPageLoaded(startPage, 1, true)))) {
-            dfd.reject('error', 'Could not fetch the wanted data.');
+            dfd.reject('error', (message === undefined) ? 'Could not fetch the wanted data.' : message);
             return;
         }
         var ret = {
@@ -299,7 +298,7 @@ function DataStore(command, options) {
             || (o.requireSpace && o.space === null)
             || (o.requireLanguage && o.language === null)
         ) {
-            dfd.reject('argument_missing', 'One or more required arguments are missing.');
+            dfd.reject('error', 'One or more required arguments are missing.');
             return;
         }
         startPage = (startPage === undefined || startPage === null) ? 0 : +startPage;
@@ -414,7 +413,23 @@ function DataStore(command, options) {
                 addDataToCache(realStartPage, items);
             }
         }).fail(function(jqXHR, textStatus, errorThrown){
-            if (expected === id) resolveRequest(dfd, startPage, maxPages, true);
+            if (expected !== id) return;
+            var msg = 'Unknown fetch error.';
+            if (jqXHR.status) {
+                switch (jqXHR.status) {
+                case 400: msg = 'Server understood the request but request content was invalid.'; break;
+                case 401: msg = 'Unauthorised access.'; break;
+                case 403: msg = 'Forbidden resouce can\'t be accessed.'; break;
+                case 404: msg = 'The requested resource does not exist.'; break;
+                case 500: msg = 'Internal server error.'; break;
+                case 503: msg = 'Service unavailable.'; break;
+                default: msg = 'Unknown HTTP error (' + jqXHR.status + ').'; break;
+                }
+            }
+            else if (textStatus == 'timeout') msg = 'Request timed out.';
+            else if (textStatus == 'parsererror') msg = 'Parsing JSON Request failed.';
+            else if (textStatus == 'abort') msg = 'Request was aborted by the server.';
+            resolveRequest(dfd, startPage, maxPages, true, msg);
         });
     }
 }
