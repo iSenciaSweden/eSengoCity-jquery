@@ -87,6 +87,7 @@ function DataStore(command, options) {
         fullFetch:        false,
         prefetch:         true,
         orderBy:          null,
+        properties:       [],
         requireNode:      false,
         requirePortal:    false,
         requireLanguage:  false,
@@ -123,6 +124,18 @@ function DataStore(command, options) {
         if (opt.pageSize != o.pageSize) {
             pageCount = Math.ceil(itemCount / opt.pageSize);
             reset = true;
+        }
+        // make sure properties is an array
+        if (!(opt.properties instanceof Array)) opt.properties = [opt.properties];
+        opt.properties.sort();
+        if (opt.properties.length != o.properties.length) reset = true;
+        else {
+            for (var i = 0; i < opt.properties.length; i++) {
+                if (opt.properties[i] != o.properties[i]) {
+                    reset = true;
+                    break;
+                }
+            }
         }
         if (opt.entryPoint != o.entryPoint) reset = true;
         if (opt.portal != o.portal) reset = true;
@@ -328,6 +341,14 @@ function DataStore(command, options) {
         if (o.space !== null) {
             url += d + 'space=' + encodeURIComponent(o.space);
             d = '&';
+        }
+        if (o.properties.length > 0) {
+            url += d + 'props=';
+            d = '&';
+            for (var i = 0; i < o.properties.length; i++) {
+                if (i > 0) url += ',';
+                url += encodeURIComponent(o.properties[i]);
+            }
         }
         // start and max pages arguments
         if (!fullFetch) {

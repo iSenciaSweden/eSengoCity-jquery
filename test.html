@@ -35,7 +35,9 @@ $.eSengoCity.setOptions({
 });
 
 // create a spaces store
-var spaces = $.eSengoCity.listSpaces();
+var spaces = $.eSengoCity.listSpaces({
+    properties: 'weatherId'
+});
 
 // create a categories store
 var categories = $.eSengoCity.listCategories({
