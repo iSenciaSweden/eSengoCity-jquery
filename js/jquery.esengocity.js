@@ -167,7 +167,9 @@ function DataStore(command, options) {
             resolveRequest(dfd, pageId, maxPages);
             // prefetch
             if (o.prefetch && expected === null) {
-                if (((pageId + maxPages) < pageCount) && !_this.isPageLoaded(pageId + maxPages) && (pageId + maxPages) < pageCount) {
+                if (((pageId + maxPages) < pageCount) && !_this.isPageLoaded(pageId + maxPages)
+                    && (pageId + maxPages) < pageCount
+                ) {
                     var dummy = $.Deferred();
                     fetchData(dummy, pageId + maxPages, 1);
                 }
@@ -283,7 +285,11 @@ function DataStore(command, options) {
     // resolve the fetch request
     function resolveRequest(dfd, startPage, maxPages, fallback, message) {
         fallback = (fallback === undefined) ? false : fallback;        
-        if ((firstFetch || startPage < pageCount) && (((!fallback || !o.useOldOnError) && !_this.isPageLoaded(startPage)) || (fallback && o.useOldOnError && !_this.isPageLoaded(startPage, 1, true)))) {
+        if ((firstFetch || startPage < pageCount)
+            && (((!fallback || !o.useOldOnError) && !_this.isPageLoaded(startPage))
+                || (fallback && o.useOldOnError && !_this.isPageLoaded(startPage, 1, true))
+            )
+        ) {
             dfd.reject('error', (message === undefined) ? 'Could not fetch the wanted data.' : message);
             return;
         }
@@ -297,7 +303,9 @@ function DataStore(command, options) {
         if (pages.length) {
             startPage -= pageFirst;
             for (var i = 0; i < maxPages; i++) {
-                if ((fallback && o.useOldOnError && !_this.isPageLoaded(i + startPage + pageFirst, 1, true)) || ((!fallback || !o.useOldOnError) && !_this.isPageLoaded(i + startPage + pageFirst))) break;
+                if ((fallback && o.useOldOnError && !_this.isPageLoaded(i + startPage + pageFirst, 1, true))
+                    || ((!fallback || !o.useOldOnError) && !_this.isPageLoaded(i + startPage + pageFirst))
+                ) break;
                 ret.pages.push(pages[startPage + i]);
             }
         }
@@ -371,7 +379,8 @@ function DataStore(command, options) {
                     realMaxPages++;
                 }
                 // fetch one extra page after
-                if (((realStartPage + realMaxPages) < pageCount) && !_this.isPageLoaded(realStartPage + realMaxPages)) realMaxPages++;
+                if (((realStartPage + realMaxPages) < pageCount) && !_this.isPageLoaded(realStartPage + realMaxPages))
+                    realMaxPages++;
             }
             url += d + 'start=' + realStartPage * pageSize;
             d = '&';
