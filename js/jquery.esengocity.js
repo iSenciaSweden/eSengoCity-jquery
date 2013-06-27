@@ -48,6 +48,7 @@ $['eSengoCity'] = {
     // list categories
     listCategories: function(options) {
         var opt = {
+            fullFetch: true,
             requireNode: true,
             requireSpace: true
         };
@@ -345,6 +346,7 @@ function DataStore(command, options) {
         if (o.properties.length > 0) {
             url += d + 'props=';
             d = '&';
+            if (o.properties.indexOf('DEFAULTS') < 0) o.properties.unshift('DEFAULTS');
             for (var i = 0; i < o.properties.length; i++) {
                 if (i > 0) url += ',';
                 url += encodeURIComponent(o.properties[i]);
@@ -440,7 +442,7 @@ function DataStore(command, options) {
                 switch (jqXHR.status) {
                 case 400: msg = 'Server understood the request but request content was invalid.'; break;
                 case 401: msg = 'Unauthorised access.'; break;
-                case 403: msg = 'Forbidden resouce can\'t be accessed.'; break;
+                case 403: msg = 'Forbidden resource can\'t be accessed.'; break;
                 case 404: msg = 'The requested resource does not exist.'; break;
                 case 500: msg = 'Internal server error.'; break;
                 case 503: msg = 'Service unavailable.'; break;
