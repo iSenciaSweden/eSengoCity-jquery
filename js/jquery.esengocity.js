@@ -117,6 +117,12 @@ function DataStore(command, options) {
     
     // store ID (used for server side store caching)
     var storeId = null;
+    
+    // geographic location
+    var geoHash = null;
+    
+    // user session
+    var userSession = null;
 
     // set options
     this.setOptions = function(options) {
@@ -400,7 +406,17 @@ function DataStore(command, options) {
             timeout: o.timeout * 1000,
             dataType: 'json',
             beforeSend: function(xhr) {
+                xhr.setRequestHeader('Accept', 'application/json,text/json;q=0.9,text/plain;q=0.8,*/*;q=0.5');
+                var lang;
+                if (o.language !== null) {
+                    if (o.language == 'en') lang = 'en,*;q=0.5';
+                    else lang = o.language+',en;q=0.8,*;q=0.5';
+                }
+                else lang = 'en,*;q=0.5';
+                xhr.setRequestHeader('Accept-Language', lang);
+                if (userSession !== null) xhr.setRequestHeader('X-Isencia-Session', userSession);
                 if (storeId !== null) xhr.setRequestHeader('X-Isencia-Store', storeId);
+                if (geoHash !== null) xhr.setRequestHeader('X-Isencia-Geo', geoHash);
             }
         }).done(function(data, textStatus, jqXHR){
             var items, total, fetched;
