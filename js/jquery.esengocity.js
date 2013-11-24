@@ -15,6 +15,7 @@ var o = {
     space:      null,
     node:       null,
     language:   null,
+    session:    null,
     timeout:    10,
     cache:      true
 };
@@ -120,9 +121,6 @@ function DataStore(command, options) {
     
     // geographic location
     var geoHash = null;
-    
-    // user session
-    var userSession = null;
 
     // set options
     this.setOptions = function(options) {
@@ -164,6 +162,11 @@ function DataStore(command, options) {
             }
         }
         o = opt;
+    };
+    
+    // set the current location (depends on https://github.com/davetroy/geohash-js/)
+    this.setLocation = function(latitude, longitude) {
+        if ($.isFunction(encodeGeoHash)) geoHash = encodeGeoHash(latitude, longitude);
     };
     
     // request a page(s) from the store
@@ -414,7 +417,7 @@ function DataStore(command, options) {
                 }
                 else lang = 'en,*;q=0.5';
                 xhr.setRequestHeader('Accept-Language', lang);
-                if (userSession !== null) xhr.setRequestHeader('X-Isencia-Session', userSession);
+                if (o.session !== null) xhr.setRequestHeader('X-Isencia-Session', o.session);
                 if (storeId !== null) xhr.setRequestHeader('X-Isencia-Store', storeId);
                 if (geoHash !== null) xhr.setRequestHeader('X-Isencia-Geo', geoHash);
             }
