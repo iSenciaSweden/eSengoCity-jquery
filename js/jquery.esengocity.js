@@ -466,7 +466,7 @@ function DataStore(command, options) {
             if (jqXHR.status) {
                 switch (jqXHR.status) {
                 case 400: msg = 'Server understood the request but request content was invalid.'; break;
-                case 401: msg = 'Unauthorised access.'; break;
+                case 401: msg = 'Unauthorized access.'; break;
                 case 403: msg = 'Forbidden resource can\'t be accessed.'; break;
                 case 404: msg = 'The requested resource does not exist.'; break;
                 case 500: msg = 'Internal server error.'; break;
