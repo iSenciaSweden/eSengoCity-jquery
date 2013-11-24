@@ -1,7 +1,7 @@
 /* Copyright (c) 2013 iSencia AB (http://www.isencia.se/)
  * Licensed under the MIT (LICENSE)
  *
- * Version: 0.1.1
+ * Version: 0.2.0
  * Requires jQuery 1.3+
  * Docs: https://github.com/iSenciaSweden/eSengoCity-jquery
  */
@@ -114,6 +114,9 @@ function DataStore(command, options) {
 
     // status object
     var dfd_expected = null;
+    
+    // store ID (used for server side store caching)
+    var storeId = null;
 
     // set options
     this.setOptions = function(options) {
@@ -395,7 +398,10 @@ function DataStore(command, options) {
             url: url,
             cache: o.cache,
             timeout: o.timeout * 1000,
-            dataType: 'json'
+            dataType: 'json',
+            beforeSend: function(xhr) {
+                if (storeId !== null) xhr.setRequestHeader('X-Isencia-Store', storeId);
+            }
         }).done(function(data, textStatus, jqXHR){
             var items, total, fetched;
             // array of fetched items
@@ -408,6 +414,16 @@ function DataStore(command, options) {
             var fetched = Math.ceil(items.length / pageSize);
             // we expected this data
             if (expected === id) {
+                // handle store id
+                var newStoreId = jqXHR.getResponseHeader('X-Isencia-Store');
+                if (newStoreId !== undefined && newStoreId !== null) {
+                    if (storeId === null) storeId = newStoreId;
+                    else if (storeId != newStoreId) {
+                        pageFirst = 0;
+                        pages = [];
+                        storeId = newStoreId;
+                    }
+                }
                 expected = null;
                 firstFetch = false;
                 if (fullFetch && total == items.length) {
