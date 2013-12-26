@@ -6,6 +6,14 @@
 </head>
 <body>
 
+<div id="debug_search">
+<h1>search</h1>
+<ul>
+</ul>
+<h3>getPage()</h3>
+<p></p>
+</div>
+
 <div id="debug_categories">
 <h1>listCategories</h1>
 <ul>
@@ -23,6 +31,7 @@
 </div>
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+<script src="test/geohash.js"></script>
 <script src="js/jquery.esengocity.js"></script>
 <script type="text/javascript">
 <!--/*--><![CDATA[/*><!--*/
@@ -30,9 +39,35 @@
 // shared configuration
 $.eSengoCity.setOptions({
     entryPoint: 'http://val.isencia.com/apropat/bridge/services/',
+    searchEntryPoint: 'http://search.cty.nu/',
     node:       'ESENGO_ISENCIA',
-    language:   'en'
+    portal:     'istaden',
+    space:      'helsingborg',
+    language:   'no'
 });
+
+var search_done = function(result){
+    $('#debug_search ul').append('<li>getPageSize() = '+search.getPageSize()+' (number of items in one page)</li>');
+    $('#debug_search ul').append('<li>getItemsCount() = '+search.getItemsCount()+' (number of items in remote store)</li>');
+    $('#debug_search ul').append('<li>getHitsCount() = '+search.getHitsCount()+' (number of search hits in remote store)</li>');
+    $('#debug_search ul').append('<li>getPagesCount() = '+search.getPagesCount()+' (number of pages in remote store)</li>');
+    $('#debug_search ul').append('<li>getLoadedItemsCount() = '+search.getLoadedItemsCount()+' (number of items available locally)</li>');
+    $('#debug_search ul').append('<li>getLoadedPagesCount() = '+search.getLoadedPagesCount()+' (number of pages available locally)</li>');
+    $('#debug_search p').append('<pre>'+JSON.stringify(result,null,'  ')+'</pre>');
+};
+
+var search = $.eSengoCity.searchGTIN('4010118459030', {
+    prefetch: false,
+    fetchPages: 1
+});
+search.setLocation(56.05079, 12.68947);
+search.getPage(0).done(search_done);
+
+setTimeout(function(){
+    search.getPage(1).done(search_done);
+}, 1000);
+
+/*
 
 // create a spaces store
 var spaces = $.eSengoCity.listSpaces({
@@ -90,6 +125,8 @@ $(function(){
     });
 
 });
+
+*/
 
 /*-->]]>*/
 </script>

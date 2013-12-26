@@ -1,8 +1,9 @@
 /* Copyright (c) 2013 iSencia AB (http://www.isencia.se/)
  * Licensed under the MIT (LICENSE)
  *
- * Version: 0.2.0
+ * Version: 0.3.1
  * Requires jQuery 1.3+
+ * Optional geohash-js
  * Docs: https://github.com/iSenciaSweden/eSengoCity-jquery
  */
 
@@ -10,14 +11,15 @@
 
 // default options
 var o = {
-    entryPoint: null,
-    portal:     null,
-    space:      null,
-    node:       null,
-    language:   null,
-    session:    null,
-    timeout:    10,
-    cache:      true
+    entryPoint:       null,
+    searchEntryPoint: null,
+    portal:           null,
+    space:            null,
+    node:             null,
+    language:         null,
+    session:          null,
+    timeout:          10,
+    cache:            true
 };
 
 // true if we have internet connectivity
@@ -71,6 +73,44 @@ $['eSengoCity'] = {
     customStore: function(command, options) {
         options = (options === undefined) ? $.extend({}, o) : $.extend({}, o, options);
         return new DataStore(command, options);
+    },
+    
+    // search store
+    search: function(query, options) {
+        return this.searchCustom('all', query, options);
+    },
+    
+    // search products store
+    searchProducts: function(query, options) {
+        return this.searchCustom('product', query, options);
+    },
+
+    // search products store
+    searchPromotions: function(query, options) {
+        return this.searchCustom('promotion', query, options);
+    },
+
+    // search products store
+    searchEntities: function(query, options) {
+        return this.searchCustom('entity', query, options);
+    },
+
+    // search by product GTIN store
+    searchGTIN: function(query, options) {
+        return this.searchCustom('gtin', query, options);
+    },
+
+    // search custom type store
+    searchCustom: function(type, query, options) {
+        if (type == undefined || type == '') type = 'all';
+        if (query === undefined || query == '') query = '*';
+        var opt = {
+            requirePortal: true,
+            requireSpace: true,
+            query: query
+        };
+        options = (options === undefined) ? $.extend({}, opt, o) : $.extend({}, o, opt, options);
+        return new DataStore(type, options);
     }
 
 };
@@ -88,17 +128,22 @@ function DataStore(command, options) {
         useOldOnError:    true,
         fullFetch:        false,
         prefetch:         true,
+        category:         null,
+        subcategory:      null,
         orderBy:          null,
         properties:       [],
+        query:            null,
         requireNode:      false,
         requirePortal:    false,
         requireLanguage:  false,
-        requireSpace:     false
+        requireSpace:     false,
+        onReset:          null
     };
     
     // remote data state
     var itemCount = 0;
     var pageCount = 0;
+    var hitCount = 0;
 
     // local data state
     var firstFetch = true;
@@ -151,6 +196,8 @@ function DataStore(command, options) {
         if (opt.language != o.language) reset = true;
         if (opt.orderBy != o.orderBy) reset = true;
         if (opt.fullFetch != o.fullFetch) reset = true;
+        if (opt.session != o.session) reset = true;
+        if (opt.query != o.query) reset = true;
         // something has changed, reset local data
         if (reset) {
             firstFetch = true;
@@ -160,13 +207,14 @@ function DataStore(command, options) {
                 expected = null;
                 dfd_expected.reject('cancel', 'The request was canceled by a newer request.');
             }
+            if ($.isFunction(opt.onReset)) opt.onReset();
         }
         o = opt;
     };
     
     // set the current location (depends on https://github.com/davetroy/geohash-js/)
     this.setLocation = function(latitude, longitude) {
-        if ($.isFunction(encodeGeoHash)) geoHash = encodeGeoHash(latitude, longitude);
+        if (typeof(encodeGeoHash) == "function") geoHash = encodeGeoHash(latitude, longitude);
     };
     
     // request a page(s) from the store
@@ -200,7 +248,12 @@ function DataStore(command, options) {
     this.getItemsCount = function() {
         return itemCount;
     };
-    
+
+    // get number of search hits
+    this.getHitsCount = function() {
+        return hitCount;
+    };
+
     // get number of pages
     this.getPagesCount = function() {
         return pageCount;
@@ -231,6 +284,11 @@ function DataStore(command, options) {
         firstFetch = true;
         pageFirst = 0;
         pages = [];
+        if (expected) {
+            expected = null;
+            dfd_expected.reject('cancel', 'The request was canceled by a newer request.');
+        }
+        if ($.isFunction(o.onReset)) o.onReset();
     };
     
     // check if page(s) is loaded
@@ -344,33 +402,51 @@ function DataStore(command, options) {
             resolveRequest(dfd, startPage, maxPages, true);
             return;
         }
-        // build url
-        var url = o.entryPoint + encodeURIComponent(command);
+        var url;
         var d = '?';
-        if (o.node !== null) {
-            url += d + 'node=' + encodeURIComponent(o.node);
-            d = '&';
-        }
-        if (o.language !== null) {
-            url += d + 'lang=' + encodeURIComponent(o.language);
-            d = '&';
-        }
-        if (o.portal !== null) {
-            url += d + 'portal=' + encodeURIComponent(o.portal);
-            d = '&';
-        }
-        if (o.space !== null) {
-            url += d + 'space=' + encodeURIComponent(o.space);
-            d = '&';
-        }
-        if (o.properties.length > 0) {
-            url += d + 'props=';
-            d = '&';
-            if (o.properties.indexOf('DEFAULTS') < 0) o.properties.unshift('DEFAULTS');
-            for (var i = 0; i < o.properties.length; i++) {
-                if (i > 0) url += ',';
-                url += encodeURIComponent(o.properties[i]);
+        // build esengo api url
+        if (o.query === null) {
+            url = o.entryPoint + encodeURIComponent(command);
+            if (o.node !== null) {
+                url += d + 'node=' + encodeURIComponent(o.node);
+                d = '&';
             }
+            if (o.language !== null) {
+                url += d + 'lang=' + encodeURIComponent(o.language);
+                d = '&';
+            }
+            if (o.portal !== null) {
+                url += d + 'portal=' + encodeURIComponent(o.portal);
+                d = '&';
+            }
+            if (o.space !== null) {
+                url += d + 'space=' + encodeURIComponent(o.space);
+                d = '&';
+            }
+            if (o.properties.length > 0) {
+                url += d + 'props=';
+                d = '&';
+                if (o.properties.indexOf('DEFAULTS') < 0) o.properties.unshift('DEFAULTS');
+                for (var i = 0; i < o.properties.length; i++) {
+                    if (i > 0) url += ',';
+                    url += encodeURIComponent(o.properties[i]);
+                }
+            }
+        }
+        // build search api url
+        else {
+            url = o.searchEntryPoint + encodeURIComponent(o.portal) + '/' + encodeURIComponent(o.space) + '/';
+            if (command == 'gtin') {
+                url += 'gtin/';
+            }
+            else if (command != 'all') {
+                url += encodeURIComponent(command) + '/';
+                if (o.category !== null) {
+                    url += encodeURIComponent(o.category) + '/';
+                    if (o.subcategory !== null) url += encodeURIComponent(o.subcategory) + '/';
+                }
+            }
+            url += encodeURIComponent(o.query);
         }
         // start and max pages arguments
         if (!fullFetch) {
@@ -429,10 +505,14 @@ function DataStore(command, options) {
             // toal size of the remote store
             if ('size' in data) total = +data.size;
             else total = items.length;
+            // number of search hits
+            if ('hits' in data) hits = +data.hits;
+            else hits = total;
             // number of pages returned
             var fetched = Math.ceil(items.length / pageSize);
             // we expected this data
             if (expected === id) {
+                expected = null;
                 // handle store id
                 var newStoreId = jqXHR.getResponseHeader('X-Isencia-Store');
                 if (newStoreId !== undefined && newStoreId !== null) {
@@ -441,10 +521,11 @@ function DataStore(command, options) {
                         pageFirst = 0;
                         pages = [];
                         storeId = newStoreId;
+                        if ($.isFunction(o.onReset)) o.onReset();
                     }
                 }
-                expected = null;
                 firstFetch = false;
+                hitCount = hits;
                 if (fullFetch && total == items.length) {
                     pageFirst = 0;
                     if (total > 0) {
@@ -468,6 +549,7 @@ function DataStore(command, options) {
                     if (total != itemCount) {
                         pageFirst = 0;
                         pages = [];
+                        if ($.isFunction(o.onReset)) o.onReset();
                     }
                     itemCount = total;
                     pageCount = Math.ceil(itemCount / o.pageSize);
