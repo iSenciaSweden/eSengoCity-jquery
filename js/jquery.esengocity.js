@@ -102,8 +102,8 @@ $['eSengoCity'] = {
 
     // search custom type store
     searchCustom: function(type, query, options) {
-        if (type == undefined || type == '') type = 'all';
-        if (query === undefined || query == '') query = '*';
+        if (type === undefined || type === null || type == '') type = 'all';
+        if (query === undefined || query === null || query == '') query = '*';
         var opt = {
             requirePortal: true,
             requireSpace: true,
@@ -384,7 +384,9 @@ function DataStore(command, options) {
 
     // do a fetch
     function fetchData(dfd, startPage, maxPages) {
-        if ((command === undefined || command === null || command == '' || o.entryPoint === null)
+        if ((command === undefined || command === null || command == '')
+            || (o.query === null && o.entryPoint === null)
+            || (o.query !== null && o.searchEntryPoint === null)
             || (o.requireNode && o.node === null)
             || (o.requirePortal && o.portal === null)
             || (o.requireSpace && o.space === null)
