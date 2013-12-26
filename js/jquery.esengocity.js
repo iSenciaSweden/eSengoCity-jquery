@@ -501,6 +501,7 @@ function DataStore(command, options) {
             }
         }).done(function(data, textStatus, jqXHR){
             var items, total, fetched;
+            var onReset = false;
             // array of fetched items
             if ('elements' in data) items = data.elements;
             else items = [];
@@ -523,7 +524,7 @@ function DataStore(command, options) {
                         pageFirst = 0;
                         pages = [];
                         storeId = newStoreId;
-                        if ($.isFunction(o.onReset)) o.onReset();
+                        onReset = true;
                     }
                 }
                 firstFetch = false;
@@ -551,11 +552,12 @@ function DataStore(command, options) {
                     if (total != itemCount) {
                         pageFirst = 0;
                         pages = [];
-                        if ($.isFunction(o.onReset)) o.onReset();
+                        onReset = true;
                     }
                     itemCount = total;
                     pageCount = Math.ceil(itemCount / o.pageSize);
                     addDataToCache(realStartPage, items);
+                    if (onReset && $.isFunction(o.onReset)) o.onReset();
                     resolveRequest(dfd, startPage, maxPages);
                 }
             }
