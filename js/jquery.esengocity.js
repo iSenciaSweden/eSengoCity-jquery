@@ -163,6 +163,7 @@ function DataStore(command, options) {
     
     // store ID (used for server side store caching)
     var storeId = null;
+    var _storeId = null;
     
     // geographic location
     var geoHash = null;
@@ -207,6 +208,7 @@ function DataStore(command, options) {
                 expected = null;
                 dfd_expected.reject('cancel', 'The request was canceled by a newer request.');
             }
+            _storeId = null;
             if ($.isFunction(opt.onReset)) opt.onReset();
         }
         o = opt;
@@ -242,6 +244,14 @@ function DataStore(command, options) {
         // fetch new data
         else fetchData(dfd, pageId, maxPages);
         return dfd;
+    };
+    
+    // get the unique id of this store
+    this.getStoreId = function() {
+        if (storeId !== null) return storeId;
+        if (_storeId === null)
+            _storeId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});
+        return _storeId;
     };
     
     // get number of items
@@ -288,6 +298,7 @@ function DataStore(command, options) {
             expected = null;
             dfd_expected.reject('cancel', 'The request was canceled by a newer request.');
         }
+        _storeId = null;
         if ($.isFunction(o.onReset)) o.onReset();
     };
     
@@ -558,6 +569,7 @@ function DataStore(command, options) {
                     pageCount = Math.ceil(itemCount / o.pageSize);
                     addDataToCache(realStartPage, items);
                     if (onReset && $.isFunction(o.onReset)) o.onReset();
+                    _storeId = null;
                     resolveRequest(dfd, startPage, maxPages);
                 }
             }
