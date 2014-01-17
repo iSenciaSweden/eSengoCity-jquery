@@ -1,7 +1,7 @@
 /* Copyright (c) 2013 iSencia AB (http://www.isencia.se/)
  * Licensed under the MIT (LICENSE)
  *
- * Version: 0.3.1
+ * Version: 0.3.3
  * Requires jQuery 1.3+
  * Optional geohash-js
  * Docs: https://github.com/iSenciaSweden/eSengoCity-jquery
@@ -168,6 +168,9 @@ function DataStore(command, options) {
     // geographic location
     var geoHash = null;
 
+    // corrected query if existing
+    var spelling = null;
+
     // set options
     this.setOptions = function(options) {
         var opt = $.extend({}, o, options);
@@ -252,6 +255,11 @@ function DataStore(command, options) {
         if (_storeId === null)
             _storeId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});
         return _storeId;
+    };
+    
+    // get corrected spelling if existing
+    this.getSpelling = function() {
+        return spelling;
     };
     
     // get number of items
@@ -522,6 +530,9 @@ function DataStore(command, options) {
             // number of search hits
             if ('hits' in data) hits = +data.hits;
             else hits = total;
+            // spelling
+            if ('spelling' in data) spelling = data.spelling;
+            else spelling = null;
             // number of pages returned
             var fetched = Math.ceil(items.length / pageSize);
             // we expected this data
@@ -538,9 +549,9 @@ function DataStore(command, options) {
                         onReset = true;
                     }
                 }
-                firstFetch = false;
                 hitCount = hits;
                 if (fullFetch && total == items.length) {
+                    firstFetch = false;
                     pageFirst = 0;
                     if (total > 0) {
                         pages = [{
@@ -560,11 +571,12 @@ function DataStore(command, options) {
                 }
                 else {
                     // reset local data if remote size has changed
-                    if (total != itemCount) {
+                    if (total != itemCount && !firstFetch) {
                         pageFirst = 0;
                         pages = [];
                         onReset = true;
                     }
+                    firstFetch = false;
                     itemCount = total;
                     pageCount = Math.ceil(itemCount / o.pageSize);
                     addDataToCache(realStartPage, items);

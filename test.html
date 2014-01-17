@@ -56,15 +56,15 @@ var search_done = function(result){
     $('#debug_search p').append('<pre>'+JSON.stringify(result,null,'  ')+'</pre>');
 };
 
-var search = $.eSengoCity.searchGTIN('4010118459030', {
+var search = $.eSengoCity.search('*', {
+    cache: false,
     prefetch: false,
-    fetchPages: 1
 });
 search.setLocation(56.05079, 12.68947);
 search.getPage(0).done(search_done);
 
 setTimeout(function(){
-    search.getPage(1).done(search_done);
+    search.getPage(7, 2).done(search_done);
 }, 1000);
 
 /*
