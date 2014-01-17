@@ -1,7 +1,7 @@
 /* Copyright (c) 2013-2014 iSencia AB (http://www.isencia.se/)
  * Licensed under the MIT (LICENSE)
  *
- * Version: 0.4.0
+ * Version: 0.4.1
  * Requires jQuery 1.3+
  * Optional geohash-js
  * Docs: https://github.com/iSenciaSweden/eSengoCity-jquery
@@ -93,6 +93,11 @@ $['eSengoCity'] = {
     // search products store
     searchEntities: function(query, options) {
         return this.searchCustom('entity', query, options);
+    },
+
+    // search misc store
+    searchMisc: function(query, options) {
+        return this.searchCustom('misc', query, options);
     },
 
     // search by product GTIN store
