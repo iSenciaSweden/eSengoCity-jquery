@@ -1,7 +1,7 @@
-/* Copyright (c) 2013 iSencia AB (http://www.isencia.se/)
+/* Copyright (c) 2013-2014 iSencia AB (http://www.isencia.se/)
  * Licensed under the MIT (LICENSE)
  *
- * Version: 0.3.3
+ * Version: 0.4.0
  * Requires jQuery 1.3+
  * Optional geohash-js
  * Docs: https://github.com/iSenciaSweden/eSengoCity-jquery
